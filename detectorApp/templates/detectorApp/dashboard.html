@@ -1,0 +1,179 @@
+{% extends 'detectorApp/base.html' %}
+{% load static %}
+{% block title %}Tableau de bord{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto">
+    <h1 class="text-2xl font-semibold text-text-primary mb-6">Tableau de bord</h1>
+
+    <!-- Cartes stats principales -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="bg-surface border border-border rounded-lg p-5 shadow-sm transition-colors duration-150 hover:border-border-strong">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Classes</p>
+                    <p class="text-3xl font-mono font-semibold text-text-primary mt-1">{{ total_classes }}</p>
+                </div>
+                <div class="w-10 h-10 shrink-0 rounded-full bg-accent-subtle flex items-center justify-center">
+                    <i data-lucide="graduation-cap" class="w-5 h-5 text-accent"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-surface border border-border rounded-lg p-5 shadow-sm transition-colors duration-150 hover:border-border-strong">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Élèves</p>
+                    <p class="text-3xl font-mono font-semibold text-text-primary mt-1">{{ total_students }}</p>
+                </div>
+                <div class="w-10 h-10 shrink-0 rounded-full bg-accent-subtle flex items-center justify-center">
+                    <i data-lucide="users" class="w-5 h-5 text-accent"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-surface border border-border rounded-lg p-5 shadow-sm transition-colors duration-150 hover:border-border-strong">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Séances</p>
+                    <p class="text-3xl font-mono font-semibold text-text-primary mt-1">{{ total_checks }}</p>
+                </div>
+                <div class="w-10 h-10 shrink-0 rounded-full bg-accent-subtle flex items-center justify-center">
+                    <i data-lucide="camera" class="w-5 h-5 text-accent"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-surface border border-border rounded-lg p-5 shadow-sm transition-colors duration-150 hover:border-border-strong">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Rapports</p>
+                    <p class="text-3xl font-mono font-semibold text-text-primary mt-1">{{ total_reports }}</p>
+                </div>
+                <div class="w-10 h-10 shrink-0 rounded-full bg-accent-subtle flex items-center justify-center">
+                    <i data-lucide="file-text" class="w-5 h-5 text-accent"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques de présence -->
+    <!-- Accent porté par une fine barre gauche, pas par toute la bordure :
+         la couleur reste réservée au sens (présent/absent/en attente), le
+         reste de la carte reste neutre, cf. STYLE_GUIDE.md §1 et §4.3 -->
+    <!--<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="bg-surface border border-border border-l-4 border-l-success rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Présents</p>
+                <div class="w-8 h-8 shrink-0 rounded-full bg-success-bg flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-4 h-4 text-success"></i>
+                </div>
+            </div>
+            <p class="text-3xl font-mono font-semibold text-text-primary">{{ total_present }}</p>
+        </div>
+        <div class="bg-surface border border-border border-l-4 border-l-danger rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Absents</p>
+                <div class="w-8 h-8 shrink-0 rounded-full bg-danger-bg flex items-center justify-center">
+                    <i data-lucide="x-circle" class="w-4 h-4 text-danger"></i>
+                </div>
+            </div>
+            <p class="text-3xl font-mono font-semibold text-text-primary">{{ total_absent }}</p>
+        </div>
+        <div class="bg-surface border border-border border-l-4 border-l-warning rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+                <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Non identifiés</p>
+                <div class="w-8 h-8 shrink-0 rounded-full bg-warning-bg flex items-center justify-center">
+                    <i data-lucide="help-circle" class="w-4 h-4 text-warning"></i>
+                </div>
+            </div>
+            <p class="text-3xl font-mono font-semibold text-text-primary">{{ total_unidentified }}</p>
+        </div>
+    </div>-->
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Derniers rapports -->
+        <div class="bg-surface border border-border rounded-lg shadow-sm">
+            <div class="px-5 py-4 border-b border-border">
+                <h2 class="text-base font-semibold text-text-primary">Derniers rapports</h2>
+            </div>
+            <div class="p-5">
+                {% if recent_reports %}
+                <div class="space-y-1">
+                    {% for report in recent_reports %}
+                    <a href="{% url 'report_detail' report.id %}"
+                       class="flex items-center justify-between py-2.5 px-2 -mx-2 rounded-md border-b border-border last:border-0 transition-colors duration-150 hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-text-primary truncate">
+                                Rapport #{{ report.id }}
+                            </p>
+                            <p class="text-xs text-text-secondary truncate">
+                                {{ report.created_at|date:"d/m/Y H:i" }} ·
+                                {{ report.attendance_check.performed_by.get_full_name|default:report.attendance_check.performed_by.username }}
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2 ml-4 shrink-0">
+                            <span class="inline-flex items-center rounded-full bg-success-bg px-2 py-0.5 text-xs font-mono font-medium text-success">
+                                {{ report.present_students.count }} P
+                            </span>
+                            <span class="inline-flex items-center rounded-full bg-danger-bg px-2 py-0.5 text-xs font-mono font-medium text-danger">
+                                {{ report.absent_students.count }} A
+                            </span>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-text-muted"></i>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="file-text" class="w-8 h-8 text-text-muted mx-auto mb-2"></i>
+                    <p class="text-sm text-text-muted">Aucun rapport pour le moment.</p>
+                </div>
+                {% endif %}
+            </div>
+            {% if recent_reports %}
+            <div class="px-5 py-3 border-t border-border bg-background rounded-b-lg">
+                <a href="{% url 'reports_list' %}" class="text-sm font-medium text-accent hover:text-accent-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded">
+                    Voir tous les rapports →
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Top classes -->
+        <div class="bg-surface border border-border rounded-lg shadow-sm">
+            <div class="px-5 py-4 border-b border-border">
+                <h2 class="text-base font-semibold text-text-primary">Classes avec le plus d'élèves</h2>
+            </div>
+            <div class="p-5">
+                {% if top_classes %}
+                <div class="space-y-1">
+                    {% for class in top_classes %}
+                    <div class="flex items-center justify-between py-2.5 px-2 -mx-2 rounded-md border-b border-border last:border-0 transition-colors duration-150 hover:bg-background">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="w-8 h-8 shrink-0 rounded-full bg-accent-subtle flex items-center justify-center">
+                                <i data-lucide="graduation-cap" class="w-4 h-4 text-accent"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-text-primary truncate">{{ class.name }}</p>
+                                <p class="text-xs text-text-secondary truncate">{{ class.description|truncatechars:30|default:"—" }}</p>
+                            </div>
+                        </div>
+                        <span class="text-sm font-mono text-text-secondary shrink-0 ml-3">{{ class.student_count }} élève(s)</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-8">
+                    <i data-lucide="graduation-cap" class="w-8 h-8 text-text-muted mx-auto mb-2"></i>
+                    <p class="text-sm text-text-muted">Aucune classe pour le moment.</p>
+                </div>
+                {% endif %}
+            </div>
+            {% if top_classes %}
+            <div class="px-5 py-3 border-t border-border bg-background rounded-b-lg">
+                <a href="{% url 'classrooms' %}" class="text-sm font-medium text-accent hover:text-accent-hover hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded">
+                    Voir toutes les classes →
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

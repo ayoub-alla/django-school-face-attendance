@@ -1,0 +1,227 @@
+{% extends 'detectorApp/base.html' %}
+{% load static %}
+{% block title %}Rapports{% endblock %}
+{% block page_title %}Rapports de présence{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto" x-data="reportsApp()">
+
+    {% if messages %}
+    <div class="mb-4 space-y-2">
+        {% for msg in messages %}
+        <div x-data="{ show: true }" x-show="show" x-transition
+             class="flex items-start gap-3 text-sm px-4 py-3 rounded-lg border {% if msg.tags == 'success' %}bg-success-bg text-success border-success/20{% else %}bg-danger-bg text-danger border-danger/20{% endif %}">
+            <i data-lucide="{% if msg.tags == 'success' %}check-circle{% else %}alert-circle{% endif %}" class="w-4 h-4 shrink-0 mt-0.5"></i>
+            <p class="flex-1 font-medium">{{ msg }}</p>
+            <button @click="show = false" class="shrink-0 opacity-70 hover:opacity-100 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label="Fermer le message">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Stats globales -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div class="bg-surface border border-border rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Total rapports</p>
+                    <p class="text-3xl font-mono font-semibold text-text-primary mt-1">{{ reports|length }}</p>
+                </div>
+                <div class="w-10 h-10 shrink-0 rounded-full bg-accent-subtle flex items-center justify-center">
+                    <i data-lucide="file-text" class="w-5 h-5 text-accent"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-surface  rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Total présents</p>
+                    <p class="text-3xl font-mono font-semibold text-text-primary mt-1">{{ total_present }}</p>
+                </div>
+                <div class="w-10 h-10 shrink-0 rounded-full bg-success-bg flex items-center justify-center">
+                    <i data-lucide="check-circle" class="w-5 h-5 text-success"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-surface  rounded-lg p-5 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-medium text-text-secondary uppercase tracking-wider">Total absents</p>
+                    <p class="text-3xl font-mono font-semibold text-text-primary mt-1">{{ total_absent }}</p>
+                </div>
+                <div class="w-10 h-10 shrink-0 rounded-full bg-danger-bg flex items-center justify-center">
+                    <i data-lucide="x-circle" class="w-5 h-5 text-danger"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des rapports -->
+    <div id="reportsList">
+        <div class="flex items-center justify-between gap-4 mb-4 flex-wrap">
+            <div class="relative max-w-xs w-full">
+                <i data-lucide="search" class="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text"
+                       class="search w-full pl-9 pr-3 py-2 border border-border-strong rounded text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent focus:ring-opacity-20"
+                       placeholder="Rechercher par enseignant, classe...">
+            </div>
+            <p class="text-xs text-text-secondary whitespace-nowrap">{{ reports|length }} rapport{{ reports|length|pluralize }}</p>
+        </div>
+
+        <div class="bg-surface border border-border-strong rounded-lg overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm min-w-[700px]">
+                    <thead>
+                        <tr class="bg-accent-subtle text-accent text-xs uppercase tracking-wider font-semibold">
+                            <th class="sort text-left px-4 py-3 cursor-pointer select-none hover:text-accent-hover" data-sort="date">
+                                Date <i data-lucide="chevrons-up-down" class="w-3 h-3 inline align-text-bottom opacity-60"></i>
+                            </th>
+                            <th class="sort text-left px-4 py-3 cursor-pointer select-none hover:text-accent-hover" data-sort="performer">
+                                Effectué par <i data-lucide="chevrons-up-down" class="w-3 h-3 inline align-text-bottom opacity-60"></i>
+                            </th>
+                            <th class="text-left px-4 py-3">Classes</th>
+                            <th class="text-center px-4 py-3">Présents</th>
+                            <th class="text-center px-4 py-3">Absents</th>
+                            <th class="text-center px-4 py-3">Non identifiés</th>
+                            <th class="text-right px-4 py-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="list">
+                        {% for report in reports %}
+                        {% with check=report.attendance_check %}
+                        <tr class="border-b border-border last:border-0 transition-colors duration-150 hover:bg-background">
+                            <td class="px-4 py-3 font-mono text-xs text-text-primary date" data-date="{{ check.created_at|date:'U' }}">{{ check.created_at|date:"d/m/Y H:i" }}</td>
+                            <td class="px-4 py-3 text-text-secondary performer">{{ check.performed_by.get_full_name|default:check.performed_by.username }}</td>
+                            <td class="px-4 py-3 classes-cell">
+                                <div class="flex flex-wrap gap-1">
+                                    {% for c in check.classrooms.all %}
+                                    <span class="text-xs bg-accent-subtle text-accent px-2 py-0.5 rounded-full">{{ c.name }}</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center rounded-full bg-success-bg px-2 py-0.5 text-xs font-mono font-semibold text-success">
+                                    {{ report.present_students.count }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-flex items-center rounded-full bg-danger-bg px-2 py-0.5 text-xs font-mono font-semibold text-danger">
+                                    {{ report.absent_students.count }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if report.unidentified_faces|length > 0 %}
+                                <span class="inline-flex items-center rounded-full bg-warning-bg px-2 py-0.5 text-xs font-mono font-semibold text-warning">
+                                    {{ report.unidentified_faces|length }}
+                                </span>
+                                {% else %}
+                                <span class="text-text-muted text-xs">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-right whitespace-nowrap">
+                                <a href="{% url 'report_detail' report.id %}" class="text-accent hover:underline text-sm inline-flex items-center gap-1 mr-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                    <i data-lucide="eye" class="w-4 h-4"></i> Détail
+                                </a>
+                                <a href="{% url 'report_pdf' report.id %}" class="text-text-secondary hover:text-accent text-sm inline-flex items-center gap-1 mr-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                    <i data-lucide="file" class="w-4 h-4"></i> PDF
+                                </a>
+                                <a href="{% url 'report_excel' report.id %}" class="text-text-secondary hover:text-accent text-sm inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Excel
+                                </a>
+                                <button @click="openDelete({{ report.id }}, '#{{ report.id|escapejs }}')"
+                                        class="text-danger hover:underline text-sm inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i> Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-4 py-12 text-center">
+                                <i data-lucide="file-text" class="w-10 h-10 mx-auto mb-3 text-text-muted opacity-40"></i>
+                                <p class="text-sm text-text-muted">Aucun rapport pour le moment.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <p id="noReportsFound" class="hidden px-4 py-10 text-center text-sm text-text-muted">
+                    Aucun rapport ne correspond à votre recherche.
+                </p>
+            </div>
+            {% if reports %}
+            <div class="flex items-center justify-between px-4 py-3 border-t border-border bg-background">
+                <span class="text-xs text-text-secondary">Résultats par page : 15</span>
+                <ul class="pagination"></ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+      <!-- Modal suppression -->
+    <div x-show="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-cloak>
+        <div class="fixed inset-0 bg-black bg-opacity-40" @click="!deleteLoading && (showDeleteModal = false)"></div>
+        <div class="bg-surface border border-border rounded-lg shadow-sm w-full max-w-sm relative z-10 p-6">
+            <h2 class="text-lg font-semibold text-text-primary mb-2">Confirmer la suppression</h2>
+            <p class="text-sm text-text-secondary mb-4">Supprimer le rapport <strong x-text="deleteName" class="text-text-primary"></strong> ?<br>Cette action est irréversible.</p>
+            <div class="flex justify-end gap-3">
+                <button @click="showDeleteModal = false" :disabled="deleteLoading"
+                        class="px-4 py-2 border border-border-strong rounded text-sm text-text-primary hover:bg-[#F0F1F3] transition-colors duration-150 disabled:opacity-50">
+                    Annuler
+                </button>
+                <form method="post" :action="`/reports/${deleteId}/delete/`" @submit="deleteLoading = true">
+                    {% csrf_token %}
+                    <button type="submit" :disabled="deleteLoading"
+                            class="px-4 py-2 bg-danger text-white rounded text-sm hover:bg-red-700 font-medium inline-flex items-center gap-2 transition-colors duration-150 disabled:opacity-50">
+                        <i x-show="deleteLoading" data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                        <span x-text="deleteLoading ? 'Suppression...' : 'Supprimer'"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/list.js@2.3.1/dist/list.min.js"></script>
+<style>
+    .pagination { display: flex; align-items: center; gap: 4px; list-style: none; padding: 0; margin: 0; }
+    .pagination li a {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 32px; height: 32px; padding: 0 8px; border-radius: 6px;
+        font-size: 13px; color: #5B6472; cursor: pointer; border: 1px solid transparent;
+        transition: background-color 150ms;
+    }
+    .pagination li a:hover { background: #F0F1F3; }
+    .pagination li.active a { background: #1E3A5F; color: #fff; }
+    .pagination li.disabled a { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+</style>
+<script>
+    const reportsList = new List('reportsList', {
+        valueNames: ['performer', { name: 'date', attr: 'data-date' }],
+        page: 15,
+        pagination: { innerWindow: 2, outerWindow: 1 },
+    });
+    reportsList.on('updated', function (list) {
+        document.getElementById('noReportsFound').classList.toggle('hidden', list.matchingItems.length !== 0);
+        lucide.createIcons();
+    });
+
+    function reportsApp() {
+        return {
+            showDeleteModal: false,
+            deleteId: null,
+            deleteName: '',
+            deleteLoading: false,
+            openDelete(id, name) {
+                this.deleteId = id;
+                this.deleteName = name;
+                this.deleteLoading = false;
+                this.showDeleteModal = true;
+            },
+        };
+    }
+</script>
+{% endblock %}

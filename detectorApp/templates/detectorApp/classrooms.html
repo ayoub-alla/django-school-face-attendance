@@ -1,0 +1,216 @@
+{% extends 'detectorApp/base.html' %}
+{% block title %}Classes{% endblock %}
+{% block page_title %}Classes{% endblock %}
+{% block page_actions %}
+<button onclick="document.dispatchEvent(new CustomEvent('open-create-classroom'))"
+        class="bg-accent text-white px-4 py-2 rounded text-sm font-medium inline-flex items-center gap-2 hover:bg-accent-hover transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+    <i data-lucide="plus" class="w-4 h-4"></i> 
+    <span class="hidden md:inline">Ajouter une classe</span>
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto" x-data="classroomModal()" x-init="document.addEventListener('open-create-classroom', () => openCreate())">
+
+    {% if messages %}
+    <div class="mb-4 space-y-2">
+        {% for msg in messages %}
+        <div x-data="{ show: true }" x-show="show" x-transition
+             class="flex items-start gap-3 text-sm px-4 py-3 rounded-lg border {% if msg.tags == 'success' %}bg-success-bg text-success border-success/20{% else %}bg-danger-bg text-danger border-danger/20{% endif %}">
+            <i data-lucide="{% if msg.tags == 'success' %}check-circle{% else %}alert-circle{% endif %}" class="w-4 h-4 shrink-0 mt-0.5"></i>
+            <p class="flex-1 font-medium">{{ msg }}</p>
+            <button @click="show = false" class="shrink-0 opacity-70 hover:opacity-100 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label="Fermer le message">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div id="classroomsList">
+        <div class="flex items-center justify-between gap-4 mb-4 flex-wrap">
+            <div class="relative max-w-xs w-full">
+                <i data-lucide="search" class="w-4 h-4 text-text-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+                <input type="text"
+                       class="search w-full pl-9 pr-3 py-2 border border-border-strong rounded text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent focus:ring-opacity-20"
+                       placeholder="Rechercher une classe...">
+            </div>
+            <p class="text-xs text-text-secondary whitespace-nowrap">{{ classes|length }} classe{{ classes|length|pluralize }}</p>
+        </div>
+
+        <div class="bg-surface border border-border-strong rounded-lg overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm min-w-[500px]">
+                    <thead>
+                        <tr class="bg-accent-subtle text-accent text-xs uppercase tracking-wider font-semibold">
+                            <th class="sort text-left px-4 py-3 cursor-pointer select-none hover:text-accent-hover" data-sort="name">
+                                Nom <i data-lucide="chevrons-up-down" class="w-3 h-3 inline align-text-bottom opacity-60"></i>
+                            </th>
+                            <th class="text-left px-4 py-3">Description</th>
+                            <th class="text-right px-4 py-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="list">
+                        {% for c in classes %}
+                        <tr class="border-b border-border last:border-0 transition-colors duration-150 hover:bg-background">
+                            <td class="px-4 py-3 text-text-primary font-medium name">{{ c.name }}</td>
+                            <td class="px-4 py-3 text-text-secondary description">{{ c.description|default:"—" }}</td>
+                            <td class="px-4 py-3 text-right whitespace-nowrap">
+                                <button @click="openEdit({{ c.id }}, '{{ c.name|escapejs }}', '{{ c.description|escapejs }}')"
+                                        class="text-text-secondary hover:text-accent text-sm inline-flex items-center gap-1 mr-3 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i> Modifier
+                                </button>
+                                <button @click="openDelete({{ c.id }}, '{{ c.name|escapejs }}')"
+                                        class="text-danger hover:underline text-sm inline-flex items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i> Supprimer
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="px-4 py-10 text-center">
+                                <i data-lucide="graduation-cap" class="w-8 h-8 text-text-muted mx-auto mb-2"></i>
+                                <p class="text-sm text-text-muted">Aucune classe pour le moment.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <p id="noClassroomsFound" class="hidden px-4 py-10 text-center text-sm text-text-muted">
+                    Aucune classe ne correspond à votre recherche.
+                </p>
+            </div>
+            {% if classes %}
+            <div class="flex items-center justify-between px-4 py-3 border-t border-border bg-background">
+                <span class="text-xs text-text-secondary">Résultats par page : 10</span>
+                <ul class="pagination"></ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal Ajout/Édition -->
+    <div x-show="showModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-cloak>
+        <div class="fixed inset-0 bg-black bg-opacity-40" @click="!loading && (showModal = false)"></div>
+        <div class="bg-surface border border-border rounded-lg shadow-sm w-full max-w-lg relative z-10 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-text-primary" x-text="editing ? 'Modifier la classe' : 'Ajouter une classe'"></h2>
+                <button @click="showModal = false" class="text-text-secondary hover:text-text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent" aria-label="Fermer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form x-ref="form" @submit="loading = true" :action="editing ? `/classrooms/${editId}/edit/` : '/classrooms/create/'" method="post" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-medium text-text-secondary mb-1">Nom</label>
+                    <input type="text" name="name" x-model="formName" required
+                           class="w-full px-3 py-2 border border-border-strong rounded text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent focus:ring-opacity-20">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-text-secondary mb-1">Description</label>
+                    <textarea name="description" x-model="formDescription" rows="3"
+                              class="w-full px-3 py-2 border border-border-strong rounded text-sm focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent focus:ring-opacity-20"></textarea>
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" @click="showModal = false" :disabled="loading"
+                            class="px-4 py-2 border border-border-strong rounded text-sm text-text-primary hover:bg-[#F0F1F3] transition-colors duration-150 disabled:opacity-50">
+                        Annuler
+                    </button>
+                    <button type="submit" :disabled="loading"
+                            class="px-4 py-2 bg-accent text-white rounded text-sm hover:bg-accent-hover font-medium inline-flex items-center gap-2 transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i x-show="loading" data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                        <span x-text="loading ? (editing ? 'Enregistrement...' : 'Création...') : (editing ? 'Enregistrer' : 'Créer')"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal suppression -->
+    <div x-show="showDeleteModal" class="fixed inset-0 z-50 flex items-center justify-center p-4" x-cloak>
+        <div class="fixed inset-0 bg-black bg-opacity-40" @click="!deleteLoading && (showDeleteModal = false)"></div>
+        <div class="bg-surface border border-border rounded-lg shadow-sm w-full max-w-sm relative z-10 p-6">
+            <h2 class="text-lg font-semibold text-text-primary mb-2">Confirmer la suppression</h2>
+            <p class="text-sm text-text-secondary mb-4">Supprimer la classe <strong x-text="deleteName" class="text-text-primary"></strong> ? Cette action est irréversible.</p>
+            <div class="flex justify-end gap-3">
+                <button @click="showDeleteModal = false" :disabled="deleteLoading"
+                        class="px-4 py-2 border border-border-strong rounded text-sm text-text-primary hover:bg-[#F0F1F3] transition-colors duration-150 disabled:opacity-50">
+                    Annuler
+                </button>
+                <form method="post" :action="`/classrooms/${deleteId}/delete/`" @submit="deleteLoading = true">
+                    {% csrf_token %}
+                    <button type="submit" :disabled="deleteLoading"
+                            class="px-4 py-2 bg-danger text-white rounded text-sm hover:bg-red-700 font-medium inline-flex items-center gap-2 transition-colors duration-150 disabled:opacity-50">
+                        <i x-show="deleteLoading" data-lucide="loader-2" class="w-4 h-4 animate-spin"></i>
+                        <span x-text="deleteLoading ? 'Suppression...' : 'Supprimer'"></span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/list.js@2.3.1/dist/list.min.js"></script>
+<style>
+    .pagination { display: flex; align-items: center; gap: 4px; list-style: none; padding: 0; margin: 0; }
+    .pagination li a {
+        display: inline-flex; align-items: center; justify-content: center;
+        min-width: 32px; height: 32px; padding: 0 8px; border-radius: 6px;
+        font-size: 13px; color: #5B6472; cursor: pointer; border: 1px solid transparent;
+        transition: background-color 150ms;
+    }
+    .pagination li a:hover { background: #F0F1F3; }
+    .pagination li.active a { background: #1E3A5F; color: #fff; }
+    .pagination li.disabled a { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+</style>
+<script>
+    const classroomsList = new List('classroomsList', {
+        valueNames: ['name', 'description'],
+        page: 10,
+        pagination: { innerWindow: 2, outerWindow: 1 },
+    });
+    classroomsList.on('updated', function (list) {
+        document.getElementById('noClassroomsFound').classList.toggle('hidden', list.matchingItems.length !== 0);
+        lucide.createIcons();
+    });
+
+    function classroomModal() {
+        return {
+            showModal: false,
+            editing: false,
+            editId: null,
+            formName: '',
+            formDescription: '',
+            showDeleteModal: false,
+            deleteId: null,
+            deleteName: '',
+            loading: false,
+            deleteLoading: false,
+            openCreate() {
+                this.editing = false;
+                this.editId = null;
+                this.formName = '';
+                this.formDescription = '';
+                this.loading = false;
+                this.showModal = true;
+                setTimeout(() => lucide.createIcons(), 50);
+            },
+            openEdit(id, name, description) {
+                this.editing = true;
+                this.editId = id;
+                this.formName = name;
+                this.formDescription = description;
+                this.loading = false;
+                this.showModal = true;
+                setTimeout(() => lucide.createIcons(), 50);
+            },
+            openDelete(id, name) {
+                this.deleteId = id;
+                this.deleteName = name;
+                this.deleteLoading = false;
+                this.showDeleteModal = true;
+            },
+        };
+    }
+</script>
+{% endblock %}

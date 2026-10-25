@@ -1,0 +1,180 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Détection Présences{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        background: '#F7F8FA',
+                        surface: '#FFFFFF',
+                        border: '#E3E6EB',
+                        'border-strong': '#C9CED6',
+                        'text-primary': '#1B2430',
+                        'text-secondary': '#5B6472',
+                        'text-muted': '#8A93A3',
+                        accent: '#1E3A5F',
+                        'accent-hover': '#152A45',
+                        'accent-subtle': '#EAF0F6',
+                        success: '#15803D',
+                        'success-bg': '#DCFCE7',
+                        danger: '#B91C1C',
+                        'danger-bg': '#FEE2E2',
+                        warning: '#B45309',
+                        'warning-bg': '#FEF3C7',
+                    },
+                    borderRadius: {
+                        DEFAULT: '6px',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['IBM Plex Mono', 'monospace'],
+                    },
+                },
+            },
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+    <style>
+        .sidebar-active { background: #EAF0F6; color: #1E3A5F; border-left: 3px solid #1E3A5F; }
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body class="bg-background min-h-screen lg:flex" x-data="{ sidebarOpen: false }">
+
+    <!-- Lien d'évitement clavier -->
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-surface focus:border focus:border-accent focus:text-accent focus:px-3 focus:py-2 focus:rounded">
+        Passer au contenu principal
+    </a>
+
+    <!-- Overlay mobile -->
+    <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false" class="fixed inset-0 bg-black bg-opacity-40 z-30 lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <div :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
+         class="fixed inset-y-0 left-0 z-40 w-60 -translate-x-full bg-surface border-r border-border
+          shadow-sm transform transition-transform duration-200 ease-in-out lg:translate-x-0
+          lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden lg:flex-shrink-0 lg:flex lg:flex-col ">
+        <div class="flex items-center justify-between p-4 border-b border-border h-14">
+            <h1 class="text-sm font-semibold text-text-primary truncate">
+                <img src="{% static 'detectorApp/img/logo.svg' %}" alt="Logo PrésenceVision" class=" h-8 object-contain">
+            </h1>
+            <button @click="sidebarOpen = false"
+                    :aria-expanded="sidebarOpen"
+                    class="lg:hidden text-text-secondary hover:text-text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    aria-label="Fermer le menu">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <nav class="flex-1 overflow-y-auto py-2  aria-label="Navigation principale">
+            <a href="{% url 'dashboard' %}"
+               {% if request.resolver_match.url_name == 'dashboard' %}aria-current="page"{% endif %}
+               class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-accent-subtle hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent {% if request.resolver_match.url_name == 'dashboard' %}sidebar-active{% endif %}">
+                <i data-lucide="layout-dashboard" class="w-5 h-5 shrink-0"></i> Dashboard
+            </a>
+            {% if user.is_super_manager %}
+            <a href="{% url 'users' %}"
+               {% if request.resolver_match.url_name == 'users' %}aria-current="page"{% endif %}
+               class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-accent-subtle hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent {% if request.resolver_match.url_name == 'users' %}sidebar-active{% endif %}">
+                <i data-lucide="user-cog" class="w-5 h-5 shrink-0"></i> Utilisateurs
+            </a>
+            {% endif %}
+            <a href="{% url 'classrooms' %}"
+               {% if request.resolver_match.url_name == 'classrooms' %}aria-current="page"{% endif %}
+               class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-accent-subtle hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent {% if request.resolver_match.url_name == 'classrooms' %}sidebar-active{% endif %}">
+                <i data-lucide="graduation-cap" class="w-5 h-5 shrink-0"></i> Classes
+            </a>
+            <a href="{% url 'students_list' %}"
+               {% if request.resolver_match.url_name == 'students_list' %}aria-current="page"{% endif %}
+               class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-accent-subtle hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent {% if request.resolver_match.url_name == 'students_list' %}sidebar-active{% endif %}">
+                <i data-lucide="contact" class="w-5 h-5 shrink-0"></i> Élèves
+            </a>
+            <!--<a href="{% url 'enroll' %}"
+               {% if request.resolver_match.url_name == 'enroll' %}aria-current="page"{% endif %}
+               class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-accent-subtle hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent {% if request.resolver_match.url_name == 'enroll' %}sidebar-active{% endif %}">
+                <i data-lucide="scan-face" class="w-5 h-5 shrink-0"></i> Enrôlement
+            </a>-->
+            <a href="{% url 'check' %}"
+               {% if request.resolver_match.url_name == 'check' %}aria-current="page"{% endif %}
+               class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-accent-subtle hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent {% if request.resolver_match.url_name == 'check' %}sidebar-active{% endif %}">
+                <i data-lucide="camera" class="w-5 h-5 shrink-0"></i> Prise de présence
+            </a>
+            <a href="{% url 'reports_list' %}"
+               {% if request.resolver_match.url_name == 'reports_list' %}aria-current="page"{% endif %}
+               class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-accent-subtle hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent {% if request.resolver_match.url_name == 'reports_list' %}sidebar-active{% endif %}">
+                <i data-lucide="file-text" class="w-5 h-5 shrink-0"></i> Rapports
+            </a>
+        </nav>
+        <div class="p-4 border-t border-border mt-auto">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-8 h-8 shrink-0 rounded-full bg-accent-subtle flex items-center justify-center">
+                    <i data-lucide="user" class="w-4 h-4 text-accent"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm text-text-primary font-medium truncate">{{ user.get_full_name|default:user.username }}</p>
+                    <form method="post" action="{% url 'logout' %}" class="inline">
+    {% csrf_token %}
+    <button type="submit" class="flex items-center gap-1 text-xs text-danger hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded">
+        <i data-lucide="log-out" class="w-3.5 h-3.5"></i> Déconnexion
+    </button>
+</form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Colonne principale : topbar + contenu -->
+    <div class="flex-1 min-w-0 flex flex-col min-h-screen">
+        <header class="h-14 shrink-0 flex items-center gap-3 px-4 lg:px-8 border-b border-border bg-surface sticky top-0 z-20">
+            <button @click="sidebarOpen = true"
+                    :aria-expanded="sidebarOpen"
+                    class="lg:hidden text-text-secondary hover:text-text-primary rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                    aria-label="Ouvrir le menu">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <h2 class="text-base font-semibold text-text-primary truncate flex-1">
+                {% block page_title %}Tableau de bord{% endblock %}
+            </h2>
+            <div class="flex items-center gap-2 shrink-0">
+                {% block page_actions %}{% endblock %}
+            </div>
+        </header>
+
+        <main id="main-content" class="flex-1 p-4 lg:p-8">
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Toasts (partagés, utilisables depuis n'importe quelle page via showToast()) -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2 w-full max-w-xs"></div>
+    <script>
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const borderColor = type === 'success' ? '#15803D' : '#B91C1C';
+            const iconName = type === 'success' ? 'check-circle' : 'alert-circle';
+            const toast = document.createElement('div');
+            toast.className = 'flex items-center gap-2 bg-surface border border-border rounded shadow-sm px-4 py-3 text-sm text-text-primary';
+            toast.style.borderLeft = `3px solid ${borderColor}`;
+            toast.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 shrink-0" style="color:${borderColor}"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            setTimeout(() => {
+                toast.style.transition = 'opacity 200ms';
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 200);
+            }, 3000);
+        }
+    </script>
+
+    <script>lucide.createIcons();</script>
+</body>
+</html>
